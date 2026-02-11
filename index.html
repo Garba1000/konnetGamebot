@@ -17,7 +17,7 @@
   --bg:#0b0b0b;
   --panel:#121212;
   --muted:#9aa0a6;
-  --accent:#1e90ff; /* Blue buttons */
+  --accent:#1e90ff;
   --gold:#ffc107;
   --glass: rgba(255,255,255,0.03);
 }
@@ -226,96 +226,95 @@ function saveAll(){
   localStorage.setItem("earned",earned);
 }
 
-// AdsGram task
+// --- TASK BLOCKS FUNCTION ---
 function createAdsTask(callback, taskCount=1, reward=100){
-  adsWrapper.innerHTML="";
-  let tasksDone=0;
-  function nextTask(){
-    if(tasksDone>=taskCount){
-      points += reward;
-      earned += reward*POINT_TO_DOLLAR;
-      saveAll();
-      updateUI();
-      if(callback) callback();
-      adsWrapper.style.display="none";
-      document.getElementById("joinOverlay").style.display="flex";
-      return;
+    adsWrapper.innerHTML="";
+    let tasksDone=0;
+    function nextTask(){
+        if(tasksDone>=taskCount){
+            points += reward;
+            earned += reward*POINT_TO_DOLLAR;
+            saveAll();
+            updateUI();
+            if(callback) callback();
+            adsWrapper.style.display="none";
+            return;
+        }
+        const el=document.createElement("adsgram-task");
+        el.setAttribute("data-block-id", TASK_BLOCKS[Math.floor(Math.random()*TASK_BLOCKS.length)]);
+        el.addEventListener("reward", ()=>{
+            tasksDone++;
+            nextTask();
+        });
+        adsWrapper.appendChild(el);
+        adsWrapper.style.display="block";
+        if(typeof el.load==="function") el.load();
     }
-    const el=document.createElement("adsgram-task");
-    el.setAttribute("data-block-id",TASK_BLOCKS[Math.floor(Math.random()*TASK_BLOCKS.length)]);
-    el.className="task";
-    el.addEventListener("reward",()=>{
-      tasksDone++;
-      nextTask();
-    });
-    adsWrapper.appendChild(el);
-    adsWrapper.style.display="block";
-    if(typeof el.load==="function") el.load();
-  }
-  nextTask();
+    nextTask();
 }
 
-// Reward block every 30 sec while game playing
+// --- REWARD BLOCKS (run only while playing game) ---
 let rewardInterval = null;
 function startRewardInterval(){
-  if(rewardInterval) clearInterval(rewardInterval);
-  rewardInterval = setInterval(()=>{
-    const el = document.createElement("adsgram-task");
-    el.setAttribute("data-block-id", REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)]);
-    el.addEventListener("reward",()=>{
-      points += 100;
-      earned += 100*POINT_TO_DOLLAR;
-      saveAll();
-      updateUI();
-    });
-    document.body.appendChild(el);
-    if(typeof el.load==="function") el.load();
-  },30000);
+    if(rewardInterval) clearInterval(rewardInterval);
+    rewardInterval = setInterval(()=>{
+        const el = document.createElement("adsgram-task");
+        el.setAttribute("data-block-id", REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)]);
+        el.addEventListener("reward", ()=>{
+            points += 100;
+            earned += 100*POINT_TO_DOLLAR;
+            saveAll();
+            updateUI();
+        });
+        el.style.display="none"; // hidden reward
+        document.body.appendChild(el);
+        if(typeof el.load==="function") el.load();
+    },30000);
 }
 
-// Game click
+// --- GAME BUTTON CLICK ---
 Object.keys(games).forEach(id=>{
-  document.getElementById(id).addEventListener("click",()=>{
-    gameFrame.src = games[id]; // Load game immediately
-    startRewardInterval(); // start reward rewards interval
+    document.getElementById(id).addEventListener("click", ()=>{
+        gameFrame.src = games[id];
+        startRewardInterval(); // start reward while playing
 
-    // Preload one reward ad silently
-    const preloadAd = document.createElement("adsgram-reward");
-    preloadAd.setAttribute("data-block-id", REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)]);
-    document.body.appendChild(preloadAd);
-    if(typeof preloadAd.load === "function") preloadAd.load();
-  });
+        // preload one reward ad silently
+        const preload = document.createElement("adsgram-task");
+        preload.setAttribute("data-block-id", REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)]);
+        preload.style.display="none";
+        document.body.appendChild(preload);
+        if(typeof preload.load==="function") preload.load();
+    });
 });
 
-// I Won / I Lost buttons
-document.getElementById("wonBtn").addEventListener("click",()=>{
-  createAdsTask(null,4,100);
-});
-document.getElementById("lostBtn").addEventListener("click",()=>{
-  tg.showAlert("Try again! Play next game to earn points.");
-});
+// --- TASK/TRIGGER BUTTONS ---
+taskButton.addEventListener("click", ()=> createAdsTask(null,1,100));
+claimButton.addEventListener("click", ()=> createAdsTask(null,1,100));
+claimButtonBig.addEventListener("click", ()=> createAdsTask(null,1,100));
+document.getElementById("wonBtn").addEventListener("click", ()=> createAdsTask(null,4,100));
+document.getElementById("lostBtn").addEventListener("click", ()=> createAdsTask(null,1,50));
 
-// Join overlay
+// --- JOIN OVERLAY ---
 function joinAndContinue(){
-  // Preload one reward ad silently
-  const rewardId = REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)];
-  const ad = document.createElement("adsgram-reward");
-  ad.setAttribute("data-block-id", rewardId);
-  document.body.appendChild(ad);
-  if(typeof ad.load === "function") ad.load();
+    const rewardId = REWARD_BLOCKS[Math.floor(Math.random()*REWARD_BLOCKS.length)];
+    const ad = document.createElement("adsgram-task");
+    ad.setAttribute("data-block-id", rewardId);
+    ad.style.display="none";
+    document.body.appendChild(ad);
+    if(typeof ad.load==="function") ad.load();
 
-  window.open("https://t.me/Konnetearnchannel","_blank");
-  if(!localStorage.getItem("joinedRewardGiven")){
-    points+=10;
-    saveAll();
-    updateUI();
-    localStorage.setItem("joinedRewardGiven","yes");
-    alert("🎉 Thanks for joining! +10 points");
-  }
-  document.getElementById("joinOverlay").style.display="none";
+    window.open("https://t.me/Konnetearnchannel","_blank");
+    if(!localStorage.getItem("joinedRewardGiven")){
+        points+=10;
+        saveAll();
+        updateUI();
+        localStorage.setItem("joinedRewardGiven","yes");
+        alert("🎉 Thanks for joining! +10 points");
+    }
+    document.getElementById("joinOverlay").style.display="none";
 }
 
-// Withdraw & Referral
+// --- REFERRAL & WITHDRAW ---
 document.getElementById("copyReferral").addEventListener("click",()=>{
   const uid=tg.initDataUnsafe?.user?.id||"unknown";
   navigator.clipboard.writeText(`https://t.me/Listensmusicbot?start=${uid}`);
