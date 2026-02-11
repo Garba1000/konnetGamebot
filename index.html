@@ -17,7 +17,7 @@
   --bg:#0b0b0b;
   --panel:#121212;
   --muted:#9aa0a6;
-  --accent:#007bff; /* Blue buttons */
+  --accent:#007bff;
   --gold:#ffc107;
   --glass: rgba(255,255,255,0.03);
 }
@@ -52,27 +52,14 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
 .claim-big{display:none;margin-top:12px;padding:14px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#0056b3);color:#fff;border:none;font-weight:700;font-size:16px;cursor:pointer}
 @media (max-width:900px){main{flex-direction:column;align-items:center} .right{width:100%;max-width:520px}}
 
-/* Full-page Join Overlay */
 #joinOverlay {
-  position:fixed;
-  top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,0.95);
-  z-index:9999;
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.95); z-index:9999; display:none;
+  flex-direction:column; align-items:center; justify-content:center; text-align:center;
 }
 #joinOverlay button{
-  padding:16px 28px;
-  font-size:18px;
-  font-weight:bold;
-  border:none;
-  border-radius:12px;
-  background:var(--accent);
-  color:#fff;
-  cursor:pointer;
+  padding:16px 28px; font-size:18px; font-weight:bold;
+  border:none; border-radius:12px; background:var(--accent); color:#fff; cursor:pointer;
 }
 </style>
 </head>
@@ -101,7 +88,7 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
 
     <div style="margin-top:10px;display:flex;gap:8px">
       <button id="taskButton" class="btn primary">Task & Earn</button>
-      <button id="claimButton" class="btn primary">Claim Points</button>
+      <button id="claimButton" class="btn primary">Claim Welcome Bonus</button>
     </div>
 
     <div class="games">
@@ -122,9 +109,7 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
     <h4>Your Referral</h4>
     <div class="small">Your ID: <strong id="userIdDisplay">-</strong></div>
     <div class="small">Referrer: <strong id="referrerDisplay">-</strong></div>
-    <div style="margin-top:8px">
-      <div class="small">Referral bonus: <strong>20%</strong> of referral earnings</div>
-    </div>
+    <div style="margin-top:8px"><div class="small">Referral bonus: <strong>20%</strong></div></div>
   </div>
 
   <div class="compact" style="margin-top:12px">
@@ -138,7 +123,7 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
 </div>
 </main>
 
-<footer><div class="small">Tip: Points convert automatically when you play games. Reward ad every 3 min gives $0.00001.</div></footer>
+<footer><div class="small">Tip: Points convert automatically only when you play games.</div></footer>
 
 <div class="drawer" id="drawer">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -158,7 +143,7 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
   </select>
 
   <label>Details (wallet / account)</label>
-  <textarea id="wdDetails" rows="3" placeholder="e.g., PAYEER_EMAIL or USDT address"></textarea>
+  <textarea id="wdDetails" rows="3"></textarea>
 
   <div style="display:flex;gap:8px;margin-top:8px">
     <button id="submitWd" class="btn primary">Send Request</button>
@@ -166,20 +151,19 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
   </div>
 </div>
 
-<!-- FULL PAGE JOIN OVERLAY -->
 <div id="joinOverlay">
   <h2 style="margin-bottom:16px;">🚫 You must join our channel to continue</h2>
   <button onclick="joinAndContinue()">👉 Join Telegram Channel</button>
 </div>
 
 <script>
-const ADSGRAM_BLOCKS = ["task-22811","task-22812","task-22813","task-22814","task-22815","task-22816"];
-const POINTS_PER_TASK = 100;
-const CONVERT_RATE = 0.02;
-const tg = window.Telegram.WebApp;
+const ADSGRAM_BLOCKS=["task-22811","task-22812","task-22813","task-22814","task-22815","task-22816"];
+const POINTS_PER_TASK=100;
+const CONVERT_RATE=0.0002; // 1 point = $0.0002
 
-let points = parseInt(localStorage.getItem("points")||0);
-let earned = parseFloat(localStorage.getItem("earned")||0);
+const tg=window.Telegram.WebApp;
+let points=parseInt(localStorage.getItem("points")||0);
+let earned=parseFloat(localStorage.getItem("earned")||0);
 
 const pointsEl=document.getElementById("points");
 const earnedEl=document.getElementById("earned");
@@ -196,34 +180,35 @@ const cancelWd=document.getElementById("cancelWd");
 const gameButtons=document.querySelectorAll(".gameBtn");
 const gameFrame=document.getElementById("gameFrame");
 
-const GAME_LINKS = {
-  "subway-surfers": "https://freeonlinegames.github.io/subway-surfers-tokyo/",
-  "happy-wheels": "https://games-online.io/game/HappyWheels/",
-  "geometry-dash": "https://freeonlinegames.github.io/geometry-dash.html"
+const GAME_LINKS={
+  "subway-surfers":"https://freeonlinegames.github.io/subway-surfers-tokyo/",
+  "happy-wheels":"https://games-online.io/game/HappyWheels/",
+  "geometry-dash":"https://freeonlinegames.github.io/geometry-dash.html"
 };
 
 function updateUI(){
-  pointsEl.textContent = points;
-  earnedEl.textContent = "$" + earned.toFixed(5);
-  claimButtonBig.style.display = points <= 0 ? "block" : "none";
-  if(!gameFrame.src) gameFrame.style.display="none"; // hide iframe if no game
+  pointsEl.textContent=points;
+  earnedEl.textContent="$"+earned.toFixed(5);
+  claimButtonBig.style.display=points<=0?"block":"none";
+  if(!gameFrame.src) gameFrame.style.display="none";
 }
 function saveAll(){
   localStorage.setItem("points",points);
   localStorage.setItem("earned",earned);
 }
+
 function getRandomAdsBlock(){
   return ADSGRAM_BLOCKS[Math.floor(Math.random()*ADSGRAM_BLOCKS.length)];
 }
+
 function createAdsTask(){
   adsWrapper.innerHTML="";
   const el=document.createElement("adsgram-task");
   el.setAttribute("data-block-id",getRandomAdsBlock());
   el.className="task";
   el.addEventListener("reward",()=>{
-    points += POINTS_PER_TASK;
-    saveAll();
-    updateUI();
+    points+=POINTS_PER_TASK;
+    saveAll(); updateUI();
     adsWrapper.style.display="none";
   });
   adsWrapper.appendChild(el);
@@ -234,45 +219,48 @@ taskButton.addEventListener("click",createAdsTask);
 claimButton.addEventListener("click",createAdsTask);
 claimButtonBig.addEventListener("click",createAdsTask);
 
-/* --- AUTO POINT CONVERSION EVERY 30 SECONDS --- */
-setInterval(()=>{
-  if(points > 0){
-    earned += points * CONVERT_RATE;
-    points = 0;
-    saveAll();
-    updateUI();
-  }
-}, 30000);
-
-/* --- GAME BUTTONS --- */
+/* 👉👉 UPDATED: auto convert ONLY when clicking a game */
 gameButtons.forEach(btn=>{
   btn.addEventListener("click",()=>{
-    if(points > 0){earned += points * CONVERT_RATE; points = 0; saveAll(); updateUI();}
-    const gameKey = btn.dataset.game;
-    gameFrame.src = GAME_LINKS[gameKey];
-    gameFrame.style.display = "block";
-    earned += 0.00001; // reward for opening game
+
+    if(points>0){
+      earned += points * CONVERT_RATE; // 100pts = $0.02
+      points = 0;
+      saveAll();
+      updateUI();
+    }
+
+    const gameKey=btn.dataset.game;
+    gameFrame.src=GAME_LINKS[gameKey];
+    gameFrame.style.display="block";
+
+    earned+=0.00001; 
     saveAll(); updateUI();
+
     tg.showAlert(`🎉 ${btn.textContent} opened! $0.00001 added.`);
   });
 });
 
-/* --- Reward ad every 3 min automatically --- */
+/* Reward ad every 3 minutes */
 setInterval(()=>{
   const rewardAd=window.Adsgram.init({blockId:"22799"});
   rewardAd.show().then(res=>{
-    if(res.done){earned += 0.00001; saveAll(); updateUI();}
+    if(res.done){
+      earned+=0.00001; saveAll(); updateUI();
+    }
   }).catch(err=>console.log(err));
 },180000);
 
-/* --- AdsGram Preload Reward + THEN Show Join Overlay --- */
+/* Preload reward + show join screen */
 document.addEventListener("DOMContentLoaded",()=>{
   const rewardAd=window.Adsgram.init({blockId:"22795"});
   rewardAd.show().then(res=>{
-    if(res.done){points+=POINTS_PER_TASK;saveAll();updateUI();}
+    if(res.done){
+      points+=POINTS_PER_TASK;
+      saveAll(); updateUI();
+    }
     document.getElementById("joinOverlay").style.display="flex";
   }).catch(err=>{
-    console.log(err);
     document.getElementById("joinOverlay").style.display="flex";
   });
 });
@@ -281,8 +269,7 @@ function joinAndContinue(){
   window.open("https://t.me/Konnetearnchannel","_blank");
   if(!localStorage.getItem("joinedRewardGiven")){
     points+=10;
-    saveAll();
-    updateUI();
+    saveAll(); updateUI();
     localStorage.setItem("joinedRewardGiven","yes");
     alert("🎉 Thanks for joining! +10 points");
   }
@@ -303,11 +290,14 @@ submitWd.addEventListener("click",()=>{
   const amount=parseFloat(document.getElementById("wdAmount").value);
   const method=document.getElementById("wdMethod").value;
   const details=document.getElementById("wdDetails").value.trim();
+
   if(!amount||amount<10)return tg.showAlert("❌ Minimum withdraw is $10.");
   if(amount>earned)return tg.showAlert(`❌ You only have $${earned.toFixed(5)} available.`);
   if(!details)return tg.showAlert("❌ Please enter your wallet or account.");
+
   earned-=amount;
-  saveAll();updateUI();
+  saveAll(); updateUI();
+
   const msg=`📤 *Withdraw Request*
 👤 User ID: ${tg.initDataUnsafe?.user?.id}
 💵 Amount: $${amount}
@@ -315,7 +305,9 @@ submitWd.addEventListener("click",()=>{
 🔗 Wallet/Account: ${details}
 💰 Remaining Balance: $${earned.toFixed(5)}
 ⭐ Remaining Points: ${points}`;
+
   Api.sendMessage({chat_id:6136849497,text:msg,parse_mode:"Markdown"});
+
   tg.showAlert("✅ Withdraw request sent!");
   drawer.style.display="none";
 });
