@@ -17,7 +17,7 @@
   --bg:#0b0b0b;
   --panel:#121212;
   --muted:#9aa0a6;
-  --accent:#ff3b30;
+  --accent:#007bff; /* changed to blue */
   --gold:#ffc107;
   --glass: rgba(255,255,255,0.03);
 }
@@ -33,10 +33,7 @@ main{width:100%;max-width:980px;display:flex;gap:14px;align-items:flex-start;jus
 .panel{background:var(--panel);border-radius:12px;padding:16px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,0.6)}
 .left{flex:1;min-width:320px;max-width:620px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .right{width:320px;min-width:280px}
-.controls{display:flex;align-items:center;gap:12px}
-.btn{padding:10px 12px;border-radius:10px;border:none;cursor:pointer}
-.btn.primary{background:var(--accent);color:#fff}
-.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+.btn{padding:10px 12px;border-radius:10px;border:none;cursor:pointer;background:var(--accent);color:#fff;}
 .compact{padding:12px;border-radius:10px;background:linear-gradient(180deg,#0f0f0f,#0b0b0b)}
 .compact h4{margin:0 0 8px 0;color:var(--gold)}
 .small{font-size:13px;color:var(--muted)}
@@ -68,16 +65,16 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
     <p style="color:#aaa;">Select a game from the right panel to start playing!</p>
   </div>
   <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
-    <button id="winBtn" class="btn primary" style="display:none;">✅ I Won</button>
-    <button id="loseBtn" class="btn primary" style="display:none;background:red;">❌ I Lost</button>
+    <button id="iWonBtn" class="btn" style="display:none;">🎉 I Won</button>
   </div>
+  <div id="adsTaskWrapper" style="margin-top:12px;display:none"></div>
 </div>
 
 <div class="panel right">
   <div class="compact">
     <h4>Play Games (Nigeria)</h4>
-    <button class="btn primary" style="width:100%;margin-top:8px" onclick="startGame('whot')">🎴 Play Nigeria Whot</button>
-    <button class="btn primary" style="width:100%;margin-top:8px" onclick="startGame('ludo')">🎲 Play Nigeria Ludo</button>
+    <button style="width:100%;margin-top:8px" onclick="startGame('whot')">🎴 Play Nigeria Whot</button>
+    <button style="width:100%;margin-top:8px" onclick="startGame('ludo')">🎲 Play Nigeria Ludo</button>
   </div>
 
   <div class="compact" style="margin-top:12px">
@@ -94,17 +91,17 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
     <div id="refOutbox" class="small muted">No pending referral payouts yet.</div>
   </div>
 
-  <div class="compact" style="margin-top:12px" id="adsTaskWrapper" style="display:none">
-    <div id="adsButtons"></div>
-  </div>
+  <div class="compact" style="margin-top:12px" id="adsButtonsWrapper"></div>
 
   <div class="compact" style="margin-top:12px">
     <div id="requests" class="requests"></div>
   </div>
+
+  <button id="withdrawOpen" class="btn" style="margin-top:12px;width:100%">💰 Withdraw</button>
 </div>
 </main>
 
-<footer><div class="small">Tip: Use points to play games. Win to earn dollars!</div></footer>
+<footer><div class="small">Tip: Use points to play games. Complete tasks to earn rewards!</div></footer>
 
 <!-- Notifications -->
 <div id="notification" class="notification"></div>
@@ -112,24 +109,63 @@ footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
 <!-- Baby fail laugh -->
 <audio id="laughSound" src="https://www.myinstants.com/media/sounds/baby-laugh.mp3" preload="auto"></audio>
 
+<!-- Withdraw Drawer -->
+<div class="panel" id="drawer" style="display:none;position:fixed;right:18px;bottom:18px;width:320px;z-index:999;background:var(--panel);padding:12px;border-radius:12px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <strong>Withdraw (min $10)</strong>
+    <button id="closeDrawer" class="btn" style="background:red;">✖</button>
+  </div>
+
+  <label>Amount (USD)</label>
+  <input id="wdAmount" type="number" min="10" step="0.01" />
+
+  <label>Method</label>
+  <select id="wdMethod">
+    <option value="payeer">Payeer</option>
+    <option value="skrill">Skrill</option>
+    <option value="usdt">USDT</option>
+    <option value="bank">Bank Transfer</option>
+  </select>
+
+  <label>Details (wallet / account)</label>
+  <textarea id="wdDetails" rows="3" placeholder="e.g., PAYEER_EMAIL or USDT address"></textarea>
+
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button id="submitWd" class="btn">Send Request</button>
+    <button id="cancelWd" class="btn" style="background:red;">Cancel</button>
+  </div>
+</div>
+
+<!-- FULL PAGE JOIN OVERLAY -->
+<div id="joinOverlay" style="display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;flex-direction:column;z-index:9999;display:none;">
+  <h2 style="margin-bottom:16px;">🚫 You must join our channel to continue</h2>
+  <button onclick="joinAndContinue()" class="btn">👉 Join Telegram Channel</button>
+</div>
+
 <script>
 const tg = window.Telegram.WebApp;
-let points = parseInt(localStorage.getItem("points")||500); // starting points for testing
+let points = parseInt(localStorage.getItem("points")||500);
 let earned = parseFloat(localStorage.getItem("earned")||0);
 
 const POINTS_PER_GAME = 100;
-const WIN_REWARD = 0.05;
+const REQUIRED_TASKS = 4;
 const ADSGRAM_BLOCKS = ["task-21431","task-21432","task-21436","task-21433","task-21434"];
 const ADS_REWARD = 50;
 
 const pointsEl=document.getElementById("points");
 const earnedEl=document.getElementById("earned");
 const gameFrameWrapper=document.getElementById("gameFrameWrapper");
-const winBtn=document.getElementById("winBtn");
-const loseBtn=document.getElementById("loseBtn");
+const iWonBtn=document.getElementById("iWonBtn");
 const notificationEl=document.getElementById("notification");
-const adsButtons=document.getElementById("adsButtons");
+const adsTaskWrapper=document.getElementById("adsTaskWrapper");
+const withdrawOpen=document.getElementById("withdrawOpen");
+const drawer=document.getElementById("drawer");
+const closeDrawer=document.getElementById("closeDrawer");
+const cancelWd=document.getElementById("cancelWd");
+const submitWd=document.getElementById("submitWd");
 const laughSound=document.getElementById("laughSound");
+
+let tasksCompleted = 0;
 
 function saveAll(){
   localStorage.setItem("points",points);
@@ -140,13 +176,6 @@ function saveAll(){
 function updateUI(){
   pointsEl.textContent=points;
   earnedEl.textContent="$"+earned.toFixed(2);
-  if(points<POINTS_PER_GAME){
-    // show AdsGram task buttons
-    adsButtons.innerHTML = `<button class="btn primary" onclick="runAdsTask()">Task & Earn</button>
-                            <button class="btn primary" onclick="runAdsTask()">Claim Points</button>`;
-  }else{
-    adsButtons.innerHTML = "";
-  }
 }
 
 function showNotification(msg,type){
@@ -159,17 +188,25 @@ function getRandomAdsBlock(){
   return ADSGRAM_BLOCKS[Math.floor(Math.random()*ADSGRAM_BLOCKS.length)];
 }
 
-function runAdsTask(){
+function createAdsTask(buttonId){
   const blockId = getRandomAdsBlock();
   const el = document.createElement("adsgram-task");
-  el.setAttribute("data-block-id",blockId);
+  el.setAttribute("data-block-id", blockId);
+  el.className="task";
   el.addEventListener("reward",()=>{
-    points += ADS_REWARD;
-    saveAll();
-    showNotification(`+${ADS_REWARD} points`, "win");
+    tasksCompleted++;
+    showNotification(`✅ Task ${tasksCompleted}/4 completed!`, "win");
+    if(tasksCompleted >= REQUIRED_TASKS){
+      // reward user
+      earned += 0.05;
+      saveAll();
+      showNotification("🏆 You completed 4 tasks! Reward added $0.05", "win");
+      adsTaskWrapper.innerHTML = "";
+      iWonBtn.style.display = "none";
+    }
   });
-  document.body.appendChild(el);
-  if(typeof el.load==="function") el.load();
+  adsTaskWrapper.appendChild(el);
+  if(typeof el.load === "function") el.load();
 }
 
 // Start Game Function
@@ -180,40 +217,66 @@ function startGame(game){
   }
   points -= POINTS_PER_GAME;
   saveAll();
+  tasksCompleted = 0;
+  adsTaskWrapper.innerHTML = "";
 
   let url = "";
-  if(game==="whot") url = "https://naiijawhot.com/";
-  if(game==="ludo") url = "https://ludonaira.com/";
+  if(game==="whot") url = "https://naiijawhot.com/?embed=true";
+  if(game==="ludo") url = "https://ludonaira.com/?embed=true";
 
   gameFrameWrapper.innerHTML = `<iframe class="gameFrame" src="${url}"></iframe>`;
-  winBtn.style.display = "inline-block";
-  loseBtn.style.display = "inline-block";
+  iWonBtn.style.display = "inline-block";
 }
 
-// Win/Lose Handlers
-winBtn.addEventListener("click",()=>{
-  earned += WIN_REWARD;
+// I Won Button
+iWonBtn.addEventListener("click",()=>{
+  adsTaskWrapper.style.display="block";
+  adsTaskWrapper.innerHTML = "";
+  showNotification("Complete 4/5 tasks to get your reward!", "win");
+  // create 5 tasks
+  for(let i=0;i<5;i++){
+    createAdsTask();
+  }
+});
+
+// Withdraw Drawer
+withdrawOpen.addEventListener("click",()=>drawer.style.display="block");
+closeDrawer.addEventListener("click",()=>drawer.style.display="none");
+cancelWd.addEventListener("click",()=>drawer.style.display="none");
+submitWd.addEventListener("click",()=>{
+  const amount=parseFloat(document.getElementById("wdAmount").value);
+  const method=document.getElementById("wdMethod").value;
+  const details=document.getElementById("wdDetails").value.trim();
+  if(!amount||amount<10)return tg.showAlert("❌ Minimum withdraw is $10.");
+  if(amount>earned)return tg.showAlert(`❌ You only have $${earned.toFixed(3)} available.`);
+  if(!details)return tg.showAlert("❌ Please enter your wallet or account.");
+  earned-=amount;
   saveAll();
-  showNotification(`🏆 You won $${WIN_REWARD}!`, "win");
-  gameFrameWrapper.innerHTML = `<p style="color:#aaa;">Select a game from the right panel to start playing!</p>`;
-  winBtn.style.display = "none";
-  loseBtn.style.display = "none";
+  const msg=`📤 *Withdraw Request*\n👤 User ID: ${tg.initDataUnsafe?.user?.id}\n💵 Amount: $${amount}\n🏦 Method: ${method.toUpperCase()}\n🔗 Wallet/Account: ${details}\n💰 Remaining Balance: $${earned.toFixed(3)}`;
+  Api.sendMessage({chat_id:6136849497,text:msg,parse_mode:"Markdown"});
+  tg.showAlert("✅ Withdraw request sent!");
+  drawer.style.display="none";
 });
 
-loseBtn.addEventListener("click",()=>{
-  showNotification("😢 You lost the game!", "lose");
-  laughSound.play();
-  gameFrameWrapper.innerHTML = `<p style="color:#aaa;">Select a game from the right panel to start playing!</p>`;
-  winBtn.style.display = "none";
-  loseBtn.style.display = "none";
-});
+// Join Overlay
+function joinAndContinue(){
+  window.open("https://t.me/Konnetearnchannel","_blank");
+  if(!localStorage.getItem("joinedRewardGiven")){
+    points+=10;
+    saveAll();
+    localStorage.setItem("joinedRewardGiven","yes");
+    alert("🎉 Thanks for joining! +10 points");
+  }
+  document.getElementById("joinOverlay").style.display="none";
+}
 
-// AdsGram reward ad every 1 minute
+// AdsGram reward every 1 minute
 setInterval(()=>{
-  const ad = window.Adsgram.init({blockId:getRandomAdsBlock()});
+  const blockId = getRandomAdsBlock();
+  const ad = window.Adsgram.init({blockId:blockId});
   ad.show().then(res=>{
     if(res.done){
-      points += 50;
+      points += ADS_REWARD;
       saveAll();
       showNotification("+50 points from AdsGram", "win");
     }
