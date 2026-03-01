@@ -13,8 +13,12 @@ body {
   margin: 0;
   padding: 20px;
 }
-h1, h2 { margin-bottom: 10px; }
-.section { margin-top: 20px; padding: 15px; background: #111; border-radius: 10px; }
+.section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #111;
+  border-radius: 10px;
+}
 .btn {
   display: inline-block;
   margin-top: 10px;
@@ -26,12 +30,21 @@ h1, h2 { margin-bottom: 10px; }
   cursor: pointer;
   text-align: center;
 }
-.btn:active { transform: scale(0.95); }
 .hidden { display: none; }
-input, select {
-  padding: 8px; margin: 5px 0; width: 100%; border-radius: 5px; border: none;
-}
 canvas { border-radius: 10px; display: block; margin: 10px auto; }
+
+#joinPopup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  z-index: 9999;
+}
 </style>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -40,12 +53,39 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
 
 <body>
 
-<h1>⚡ Spin & Earn Points</h1>
+<!-- JOIN POPUP -->
+<div id="joinPopup">
+  <h2>📢 Join Our Telegram Channel</h2>
+  <p>You must join to continue.</p>
+  <button onclick="joinChannel()">Join Channel</button>
+</div>
+
+<div id="mainPage" style="display:none;">
+
+<h1>⚡ Spin & Earn</h1>
 <p>Points: <span id="points">0</span></p>
 
+<!-- SPIN SECTION -->
 <div class="section">
   <canvas id="spinCanvas" width="300" height="300"></canvas>
   <p id="spinMsg">🎡 Tap wheel to spin (0/6)</p>
+</div>
+
+<!-- TASK SECTION -->
+<div class="section">
+  <h2>📋 Tasks</h2>
+  <div class="btn" id="startTasksBtn">Start Tasks</div>
+</div>
+
+<!-- WITHDRAW SECTION -->
+<div class="section">
+  <h2>💳 Withdraw</h2>
+  <p><b>Minimum 250,000 points</b></p>
+  <input type="text" id="address" placeholder="Enter wallet address"/>
+  <input type="number" id="amount" placeholder="Amount"/>
+  <div class="btn" id="withdrawBtn">Withdraw</div>
+</div>
+
 </div>
 
 <div id="adsgram-container" class="hidden"></div>
@@ -57,6 +97,14 @@ let points = parseInt(localStorage.getItem("points") || "0");
 function saveState(){ localStorage.setItem("points", points); }
 function updateUI(){ document.getElementById("points").innerText = points; }
 updateUI();
+
+/* JOIN SYSTEM */
+function joinChannel(){
+  window.open("https://t.me/crytocurrentupdate","_blank");
+  document.getElementById("joinPopup").style.display="none";
+  document.getElementById("mainPage").style.display="block";
+}
+document.getElementById("joinPopup").style.display="flex";
 
 /* ================= SPIN SYSTEM ================= */
 
@@ -72,9 +120,8 @@ const spinMsg = document.getElementById("spinMsg");
 const container = document.getElementById("adsgram-container");
 
 let currentRotation = 0;
-const spinSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
 
-/* DRAW WHEEL */
+/* DRAW */
 function drawWheel(rotation = 0){
   const segments = 6;
   const angle = (2 * Math.PI) / segments;
@@ -92,111 +139,114 @@ function drawWheel(rotation = 0){
     ctx.fill();
     ctx.stroke();
   }
-
   ctx.restore();
-
-  ctx.beginPath();
-  ctx.moveTo(150,10);
-  ctx.lineTo(140,40);
-  ctx.lineTo(160,40);
-  ctx.fillStyle="#fff";
-  ctx.fill();
 }
 drawWheel();
 
 /* SPIN CLICK */
 canvas.addEventListener("click", ()=>{
   if(spinning) return;
-
   spinning = true;
-  spinSound.play();
 
-  let spinDuration = 2500;
-  let spinAngle = Math.random() * 360 + 1080;
+  let spinAngle = Math.random()*360 + 1080;
   let start = null;
 
-  function animateSpin(timestamp){
-    if(!start) start = timestamp;
-    let progress = timestamp - start;
+  function animate(t){
+    if(!start) start=t;
+    let progress=t-start;
 
-    if(progress < spinDuration){
-      let easeOut = 1 - Math.pow(1 - progress/spinDuration,3);
-      currentRotation = (spinAngle * easeOut) * Math.PI/180;
+    if(progress<2500){
+      let ease=1-Math.pow(1-progress/2500,3);
+      currentRotation=(spinAngle*ease)*Math.PI/180;
       drawWheel(currentRotation);
-      requestAnimationFrame(animateSpin);
+      requestAnimationFrame(animate);
     }else{
-      spinning = false;
+      spinning=false;
       showSpinAd();
     }
   }
-  requestAnimationFrame(animateSpin);
+  requestAnimationFrame(animate);
 });
 
-/* SHOW AD AFTER EACH SPIN */
+/* SHOW AD */
 function showSpinAd(){
   try{
-    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
-    const rewardAd = window.Adsgram.init({blockId: randomBlock});
-    rewardAd.show().finally(()=>{
+    const randomBlock=rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
+    const ad=window.Adsgram.init({blockId:randomBlock});
+    ad.show().finally(()=>{
       spinCount++;
-      spinMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
-      if(spinCount >= 6){
-        showClaimButton();
-      }
+      spinMsg.innerText="🎡 Tap wheel to spin ("+spinCount+"/6)";
+      if(spinCount>=6) showClaimButton();
     });
   }catch(e){
     spinCount++;
-    if(spinCount >= 6){
-      showClaimButton();
-    }
+    if(spinCount>=6) showClaimButton();
   }
 }
 
-/* SHOW CLAIM BUTTON */
+/* CLAIM BUTTON */
 function showClaimButton(){
-  spinMsg.innerHTML = `
-    🎁 You completed 6 spins!<br><br>
+  spinMsg.innerHTML=`
+    🎁 6 Spins Completed<br><br>
     <div class="btn" id="claimBtn">Claim 200 Points</div>
   `;
-
-  document.getElementById("claimBtn").addEventListener("click", showClaimTask);
+  document.getElementById("claimBtn").onclick=showClaimTask;
 }
 
-/* SHOW CLAIM TASK */
+/* CLAIM TASK */
 function showClaimTask(){
-  const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
-
-  container.innerHTML = `<adsgram-task class="spin-claim-task" data-block-id="${randomTask}"></adsgram-task>`;
+  const randomTask=spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
+  container.innerHTML=`<adsgram-task class="claim-task" data-block-id="${randomTask}"></adsgram-task>`;
   container.classList.remove("hidden");
 
-  const task = container.querySelector(".spin-claim-task");
-
-  task.addEventListener("reward", ()=>{
-    points += 200;
+  const task=container.querySelector(".claim-task");
+  task.addEventListener("reward",()=>{
+    points+=200;
     saveState();
     updateUI();
 
     container.classList.add("hidden");
+    spinMsg.innerHTML="🎉 You're successfully received 200 points from Spin & Earn<br><br>Resetting in 30 seconds...";
 
-    spinMsg.innerHTML = `
-      🎉 You're successfully received 200 points from Spin & Earn<br><br>
-      🔄 Resetting in 30 seconds...
-    `;
-
-    setTimeout(resetSpinSystem, 30000); // 30 seconds
+    setTimeout(resetSpin,30000);
   });
 }
 
-/* RESET SYSTEM */
-function resetSpinSystem(){
-  spinCount = 0;
-  currentRotation = 0;
+/* RESET */
+function resetSpin(){
+  spinCount=0;
+  currentRotation=0;
   drawWheel();
-  spinMsg.innerText = "🎡 Tap wheel to spin (0/6)";
+  spinMsg.innerText="🎡 Tap wheel to spin (0/6)";
 }
 
-/* INIT */
-updateUI();
+/* ================= NORMAL TASK BUTTON ================= */
+document.getElementById("startTasksBtn").addEventListener("click",()=>{
+  const randomTask=spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
+  container.innerHTML=`<adsgram-task data-block-id="${randomTask}"></adsgram-task>`;
+  container.classList.remove("hidden");
+});
+
+/* ================= WITHDRAW ================= */
+document.getElementById("withdrawBtn").addEventListener("click",()=>{
+  const amount=parseInt(document.getElementById("amount").value);
+  const address=document.getElementById("address").value.trim();
+
+  if(amount<250000){ alert("Minimum 250,000 points"); return; }
+  if(points<amount){ alert("Not enough points"); return; }
+
+  const user=webApp.initDataUnsafe.user||{};
+  Telegram.WebApp.sendData(JSON.stringify({
+    type:"withdraw",
+    user_id:user.id,
+    amount,address
+  }));
+
+  points-=amount;
+  saveState();
+  updateUI();
+  alert("Withdrawal request sent!");
+});
 </script>
 
 </body>
