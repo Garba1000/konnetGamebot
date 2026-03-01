@@ -56,21 +56,6 @@ input, select {
   cursor: pointer;
 }
 canvas { border-radius: 10px; display: block; margin: 10px auto; }
-#claimSuccessMsg {
-  position: absolute;
-  top: 50px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #00c853;
-  color: #fff;
-  padding: 15px 20px;
-  border-radius: 10px;
-  font-weight: bold;
-  font-size: 16px;
-  display: none;
-  z-index: 9999;
-  text-align: center;
-}
 </style>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -101,12 +86,6 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
   <div class="btn" id="startTasksBtn">Start Tasks</div>
 </div>
 <div id="adsgram-container" class="hidden"></div>
-<div id="nextTaskBtnContainer" class="hidden">
-  <div class="btn" id="nextTaskBtn">➡️ Next Task</div>
-</div>
-<div id="finalTaskBtnContainer" class="hidden">
-  <div class="btn" id="finalTaskBtn">🏁 Finish Tasks</div>
-</div>
 </div>
 
 <div class="section">
@@ -127,8 +106,13 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
 
 <script>
 const webApp = Telegram.WebApp;
-let points = parseInt(localStorage.getItem("points") || "0");
-let energy = parseInt(localStorage.getItem("energy") || "50");
+
+/* ===== SAFE STORAGE FIX ===== */
+let points = Number(localStorage.getItem("points"));
+let energy = Number(localStorage.getItem("energy"));
+
+if (isNaN(points)) points = 0;
+if (isNaN(energy)) energy = 50;
 
 function updateUI(){
   document.getElementById("points").innerText = points;
@@ -146,14 +130,7 @@ function joinChannelClicked(){
   document.getElementById("mainPage").style.display="block";
 }
 function showJoinPopupAfterAds(){
-  try{
-    const rewardAd = window.Adsgram.init({blockId:"23731"});
-    rewardAd.show().finally(()=>{
-      document.getElementById("joinPopup").style.display="flex";
-    });
-  }catch(e){
-    document.getElementById("joinPopup").style.display="flex";
-  }
+  document.getElementById("joinPopup").style.display="flex";
 }
 
 /* ================= SPIN SYSTEM ================= */
@@ -170,7 +147,6 @@ const scratchMsg = document.getElementById("scratchMsg");
 const container = document.getElementById("adsgram-container");
 
 let currentRotation = 0;
-const spinSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
 
 function drawWheel(rotation = 0){
   const segments = 6;
@@ -187,17 +163,9 @@ function drawWheel(rotation = 0){
     ctx.arc(0,0,140,i*angle,(i+1)*angle);
     ctx.fillStyle = i % 2 === 0 ? "#00c853" : "#222";
     ctx.fill();
-    ctx.stroke();
   }
 
   ctx.restore();
-
-  ctx.beginPath();
-  ctx.moveTo(150,10);
-  ctx.lineTo(140,40);
-  ctx.lineTo(160,40);
-  ctx.fillStyle="#fff";
-  ctx.fill();
 }
 drawWheel();
 
@@ -205,9 +173,8 @@ canvas.addEventListener("click", ()=>{
   if(spinning || rewardCooldown) return;
 
   spinning = true;
-  spinSound.play();
 
-  let spinDuration = 2500;
+  let spinDuration = 2000;
   let spinAngle = Math.random() * 360 + 1080;
   let start = null;
 
@@ -229,37 +196,44 @@ canvas.addEventListener("click", ()=>{
 });
 
 function showRewardAd(){
-  try{
-    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
-    const rewardAd = window.Adsgram.init({blockId: randomBlock});
-    rewardAd.show().finally(()=>{
-      spinCount++;
-      scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
-      if(spinCount >= 6){
-        showSpinTask();
-      }
-    });
-  }catch(e){
-    spinCount++;
-    if(spinCount >= 6){
-      showSpinTask();
-    }
+  spinCount++;
+  scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
+  if(spinCount >= 6){
+    showClaimButton();
   }
 }
 
-function showSpinTask(){
+function showClaimButton(){
   rewardCooldown = true;
+  scratchMsg.innerHTML = "🎉 You completed 6 spins!";
+
+  const btn = document.createElement("div");
+  btn.className = "btn";
+  btn.innerText = "🎁 Claim 200 Points";
+
+  btn.onclick = function(){
+    showSpinTask();
+    btn.remove();
+  };
+
+  scratchMsg.appendChild(document.createElement("br"));
+  scratchMsg.appendChild(btn);
+}
+
+function showSpinTask(){
   const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
   container.innerHTML = `<adsgram-task class="spin-task" data-block-id="${randomTask}"></adsgram-task>`;
   container.classList.remove("hidden");
 
   const task = container.querySelector(".spin-task");
   task.addEventListener("reward", ()=>{
-    points += 20;
+    points += 200;
     saveState();
     updateUI();
-    scratchMsg.innerText = "🎉 You earned 20 points!";
+
+    scratchMsg.innerText = "✅ Successfully earned 200 points!";
     container.classList.add("hidden");
+
     setTimeout(resetSpin, 3000);
   });
 }
@@ -271,60 +245,6 @@ function resetSpin(){
   currentRotation = 0;
   drawWheel();
 }
-
-/* ================= TASK SYSTEM ================= */
-let currentTaskIndex=0;
-const taskIds=["task-23767","task-23768","task-23769","task-23774","task-23775"];
-
-function loadTask(blockId){
-  container.innerHTML=`<adsgram-task class="task" data-block-id="${blockId}"></adsgram-task>`;
-  container.classList.remove("hidden");
-  document.getElementById("taskIntro").classList.add("hidden");
-
-  const task=container.querySelector(".task");
-  task.addEventListener("reward",()=>{
-    points += 1;
-    saveState();
-    updateUI();
-
-    if(currentTaskIndex<taskIds.length-1){
-      document.getElementById("nextTaskBtnContainer").classList.remove("hidden");
-    }else{
-      document.getElementById("finalTaskBtnContainer").classList.remove("hidden");
-    }
-  });
-}
-
-document.getElementById("startTasksBtn").addEventListener("click",()=>{
-  currentTaskIndex=0;
-  loadTask(taskIds[currentTaskIndex]);
-});
-document.getElementById("nextTaskBtn").addEventListener("click",()=>{
-  currentTaskIndex++;
-  document.getElementById("nextTaskBtnContainer").classList.add("hidden");
-  loadTask(taskIds[currentTaskIndex]);
-});
-document.getElementById("finalTaskBtn").addEventListener("click",()=>{
-  try{
-    const rewardAd=window.Adsgram.init({blockId:"23731"});
-    rewardAd.show().then(res=>{
-      if(res.done){
-        points+=1;
-        saveState();
-        updateUI();
-      }
-      document.getElementById("taskIntro").classList.remove("hidden");
-      container.classList.add("hidden");
-      document.getElementById("finalTaskBtnContainer").classList.add("hidden");
-      currentTaskIndex=0;
-    });
-  }catch(e){
-    document.getElementById("taskIntro").classList.remove("hidden");
-    container.classList.add("hidden");
-    document.getElementById("finalTaskBtnContainer").classList.add("hidden");
-    currentTaskIndex=0;
-  }
-});
 
 /* ================= WITHDRAW ================= */
 document.getElementById("withdrawBtn").addEventListener("click",()=>{
@@ -348,6 +268,7 @@ document.getElementById("withdrawBtn").addEventListener("click",()=>{
     username:user.username||"No username",
     amount,method,address
   });
+
   Telegram.WebApp.sendData(msg);
 
   points-=amount;
