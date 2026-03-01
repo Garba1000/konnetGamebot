@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Spin & Earn</title>
+<title>Scratch & Earn</title>
 
 <style>
 body {
@@ -56,8 +56,6 @@ input, select {
   cursor: pointer;
 }
 canvas { border-radius: 10px; display: block; margin: 10px auto; }
-
-/* Floating success popup */
 #claimSuccessMsg {
   position: absolute;
   top: 50px;
@@ -89,16 +87,13 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
 
 <div id="mainPage" style="display:none;">
 
-<h1>🎡 Spin & Earn Points</h1>
+<h1>⚡ Spin & Earn Points</h1>
 <p>Points: <span id="points">0</span> | Energy: <span id="energy">50</span></p>
 
 <div class="section">
   <canvas id="spinCanvas" width="300" height="300"></canvas>
-  <p id="spinMsg">🎡 Click the wheel to spin (0/6)</p>
+  <p id="scratchMsg">🎡 Tap wheel to spin (0/6)</p>
 </div>
-
-<!-- Floating success popup -->
-<div id="claimSuccessMsg"></div>
 
 <div class="section">
 <h2>📋 Tasks</h2>
@@ -150,7 +145,6 @@ function joinChannelClicked(){
   document.getElementById("joinPopup").style.display="none";
   document.getElementById("mainPage").style.display="block";
 }
-
 function showJoinPopupAfterAds(){
   try{
     const rewardAd = window.Adsgram.init({blockId:"23731"});
@@ -164,89 +158,135 @@ function showJoinPopupAfterAds(){
 
 /* ================= SPIN SYSTEM ================= */
 const rewardBlocks = ["23731","23732","23734"];
+const spinTaskBlocks = ["task-23767","task-23768","task-23774","task-23775"];
+
 let spinCount = 0;
-let spinAvailable = true;
+let spinning = false;
+let rewardCooldown = false;
 
-const spinCanvas = document.getElementById("spinCanvas");
-const spinCtx = spinCanvas.getContext("2d");
-const spinMsg = document.getElementById("spinMsg");
+const canvas = document.getElementById("spinCanvas");
+const ctx = canvas.getContext("2d");
+const scratchMsg = document.getElementById("scratchMsg");
+const container = document.getElementById("adsgram-container");
 
-function drawWheel(){
+let currentRotation = 0;
+const spinSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
+
+function drawWheel(rotation = 0){
   const segments = 6;
-  const angle = (2*Math.PI)/segments;
-  spinCtx.clearRect(0,0,spinCanvas.width,spinCanvas.height);
-  spinCtx.save();
-  spinCtx.translate(150,150);
+  const angle = (2 * Math.PI) / segments;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(150,150);
+  ctx.rotate(rotation);
+
   for(let i=0;i<segments;i++){
-    spinCtx.beginPath();
-    spinCtx.moveTo(0,0);
-    spinCtx.arc(0,0,140,i*angle,(i+1)*angle);
-    spinCtx.fillStyle=i%2===0?"#00c853":"#222";
-    spinCtx.fill();
-    spinCtx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,140,i*angle,(i+1)*angle);
+    ctx.fillStyle = i % 2 === 0 ? "#00c853" : "#222";
+    ctx.fill();
+    ctx.stroke();
   }
-  spinCtx.restore();
+
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.moveTo(150,10);
+  ctx.lineTo(140,40);
+  ctx.lineTo(160,40);
+  ctx.fillStyle="#fff";
+  ctx.fill();
 }
 drawWheel();
 
-spinCanvas.addEventListener("click",()=>{
-  if(!spinAvailable) return;
-  spinAvailable=false;
-  const spinAngle = Math.random()*360 + 1080;
-  const start = performance.now();
-  function animate(t){
-    const progress = t - start;
-    if(progress<2500){
-      const ease = 1-Math.pow(1-progress/2500,3);
-      const rotation = (spinAngle*ease)*Math.PI/180;
-      spinCtx.clearRect(0,0,spinCanvas.width,spinCanvas.height);
-      spinCtx.save();
-      spinCtx.translate(150,150);
-      spinCtx.rotate(rotation);
-      drawWheel();
-      spinCtx.restore();
-      requestAnimationFrame(animate);
+canvas.addEventListener("click", ()=>{
+  if(spinning || rewardCooldown) return;
+
+  spinning = true;
+  spinSound.play();
+
+  let spinDuration = 2500;
+  let spinAngle = Math.random() * 360 + 1080;
+  let start = null;
+
+  function animateSpin(timestamp){
+    if(!start) start = timestamp;
+    let progress = timestamp - start;
+
+    if(progress < spinDuration){
+      let easeOut = 1 - Math.pow(1 - progress/spinDuration,3);
+      currentRotation = (spinAngle * easeOut) * Math.PI/180;
+      drawWheel(currentRotation);
+      requestAnimationFrame(animateSpin);
     }else{
+      spinning = false;
+      showRewardAd();
+    }
+  }
+  requestAnimationFrame(animateSpin);
+});
+
+function showRewardAd(){
+  try{
+    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
+    const rewardAd = window.Adsgram.init({blockId: randomBlock});
+    rewardAd.show().finally(()=>{
+      spinCount++;
+      scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
+      if(spinCount >= 6){
+        showSpinTask();
+      }
+    });
+  }catch(e){
+    spinCount++;
+    if(spinCount >= 6){
       showSpinTask();
     }
   }
-  requestAnimationFrame(animate);
-});
+}
 
 function showSpinTask(){
-  const randomTask = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
-  const container = document.getElementById("adsgram-container");
-  container.innerHTML=`<adsgram-task class="task" data-block-id="${randomTask}"></adsgram-task>`;
+  rewardCooldown = true;
+  const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
+  container.innerHTML = `<adsgram-task class="spin-task" data-block-id="${randomTask}"></adsgram-task>`;
   container.classList.remove("hidden");
 
-  const task = container.querySelector(".task");
-  task.addEventListener("reward",()=>{
-    points += 3000;
+  const task = container.querySelector(".spin-task");
+  task.addEventListener("reward", ()=>{
+    points += 20;
     saveState();
     updateUI();
+    scratchMsg.innerText = "🎉 You earned 20 points!";
     container.classList.add("hidden");
-
-    const popup = document.getElementById("claimSuccessMsg");
-    popup.innerText = "🎉 You're successful! Claim 3000 points from Spin.";
-    popup.style.display = "block";
-    setTimeout(()=>{ popup.style.display="none"; spinAvailable=true; spinCount=0; spinMsg.innerText="🎡 Click the wheel to spin (0/6)"; drawWheel(); },30000);
+    setTimeout(resetSpin, 3000);
   });
+}
+
+function resetSpin(){
+  spinCount = 0;
+  rewardCooldown = false;
+  scratchMsg.innerText = "🎡 Tap wheel to spin (0/6)";
+  currentRotation = 0;
+  drawWheel();
 }
 
 /* ================= TASK SYSTEM ================= */
 let currentTaskIndex=0;
 const taskIds=["task-23767","task-23768","task-23769","task-23774","task-23775"];
+
 function loadTask(blockId){
-  const container=document.getElementById("adsgram-container");
   container.innerHTML=`<adsgram-task class="task" data-block-id="${blockId}"></adsgram-task>`;
   container.classList.remove("hidden");
   document.getElementById("taskIntro").classList.add("hidden");
 
   const task=container.querySelector(".task");
-  task.addEventListener("reward",(e)=>{
-    energy += 2;
+  task.addEventListener("reward",()=>{
+    points += 1;
     saveState();
     updateUI();
+
     if(currentTaskIndex<taskIds.length-1){
       document.getElementById("nextTaskBtnContainer").classList.remove("hidden");
     }else{
@@ -268,15 +308,19 @@ document.getElementById("finalTaskBtn").addEventListener("click",()=>{
   try{
     const rewardAd=window.Adsgram.init({blockId:"23731"});
     rewardAd.show().then(res=>{
-      if(res.done){ energy+=2; saveState(); updateUI();}
+      if(res.done){
+        points+=1;
+        saveState();
+        updateUI();
+      }
       document.getElementById("taskIntro").classList.remove("hidden");
-      document.getElementById("adsgram-container").classList.add("hidden");
+      container.classList.add("hidden");
       document.getElementById("finalTaskBtnContainer").classList.add("hidden");
       currentTaskIndex=0;
     });
   }catch(e){
     document.getElementById("taskIntro").classList.remove("hidden");
-    document.getElementById("adsgram-container").classList.add("hidden");
+    container.classList.add("hidden");
     document.getElementById("finalTaskBtnContainer").classList.add("hidden");
     currentTaskIndex=0;
   }
@@ -287,22 +331,31 @@ document.getElementById("withdrawBtn").addEventListener("click",()=>{
   const method=document.getElementById("method").value;
   const address=document.getElementById("address").value.trim();
   const amount=parseInt(document.getElementById("amount").value);
-  if(isNaN(amount)||amount<250000){ alert("Minimum withdrawal is 250,000 points (~$59)"); return;}
-  if(points<amount){ alert("Not enough points"); return;}
+
+  if(isNaN(amount)||amount<250000){
+    alert("Minimum withdrawal is 250,000 points (~$59)");
+    return;
+  }
+  if(points<amount){
+    alert("Not enough points");
+    return;
+  }
+
   const user=webApp.initDataUnsafe.user||{};
-  Telegram.WebApp.sendData(JSON.stringify({
+  const msg=JSON.stringify({
     type:"withdraw_request",
     user_id:user.id,
     username:user.username||"No username",
     amount,method,address
-  }));
+  });
+  Telegram.WebApp.sendData(msg);
+
   points-=amount;
   saveState();
   updateUI();
   alert("✅ Withdrawal request sent!");
 });
 
-/* LOAD */
 document.addEventListener("DOMContentLoaded",()=>{
   updateUI();
   showJoinPopupAfterAds();
