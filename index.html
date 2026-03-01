@@ -1,318 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Konnethubbot — Earn Points & Play</title>
-
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
-
-<!-- AdsGram SDK -->
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Scratch & Earn</title>
 
 <style>
-:root{
-  --bg:#0b0b0b;
-  --panel:#121212;
-  --muted:#9aa0a6;
-  --accent:#007bff;
-  --gold:#ffc107;
-  --glass: rgba(255,255,255,0.03);
+body {
+  font-family: Arial, sans-serif;
+  background: #000;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
 }
-*{box-sizing:border-box;font-family:Inter,Roboto,system-ui,-apple-system,Segoe UI,Arial; color:#fff;}
-body{margin:0;background:linear-gradient(180deg,var(--bg),#050505);min-height:100vh;padding:18px;display:flex;flex-direction:column;align-items:center;}
-header{width:100%;max-width:980px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-h1{font-size:20px;color:var(--accent);margin:0}
-.stats{display:flex;gap:12px}
-.card{background:var(--panel);padding:12px 16px;border-radius:10px;min-width:110px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.5)}
-.card h2{font-size:18px;margin:0;color:var(--gold)}
-.card p{color:var(--muted);font-size:13px;margin:6px 0 0}
-main{width:100%;max-width:980px;display:flex;gap:14px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
-.panel{background:var(--panel);border-radius:12px;padding:16px;width:100%;box-shadow:0 6px 24px rgba(0,0,0,0.6)}
-.left{flex:1;min-width:320px;max-width:620px}
-.right{width:320px;min-width:280px}
-.task-area{margin-top:12px;padding:12px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.02)}
-.games{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.games button{flex:1;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
-#gameFrame{width:100%;height:480px;border:none;margin-top:12px;border-radius:12px;display:none}
-adsgram-task{display:block;margin-top:8px;--adsgram-task-button-width:100%;--adsgram-task-font-size:15px}
-.row{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
-.btn{padding:10px 12px;border-radius:10px;border:none;cursor:pointer}
-.btn.primary{background:var(--accent);color:#fff}
-.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-.compact{padding:12px;border-radius:10px;background:linear-gradient(180deg,#0f0f0f,#0b0b0b)}
-.compact h4{margin:0 0 8px 0;color:var(--gold)}
-.small{font-size:13px;color:var(--muted)}
-.drawer{position:fixed;right:18px;bottom:18px;background:var(--panel);padding:14px;border-radius:12px;width:320px;box-shadow:0 10px 40px rgba(0,0,0,0.6);display:none}
-input, select, textarea{width:100%;padding:8px;border-radius:8px;border:none;background:#0a0a0a;color:#fff;margin-bottom:8px}
-.requests{max-height:240px;overflow:auto;margin-top:8px;border-top:1px dashed rgba(255,255,255,0.02);padding-top:8px}
-footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center}
-.claim-big{display:none;margin-top:12px;padding:14px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#0056b3);color:#fff;border:none;font-weight:700;font-size:16px;cursor:pointer}
-@media (max-width:900px){main{flex-direction:column;align-items:center} .right{width:100%;max-width:520px}}
-
-#joinOverlay {
-  position:fixed; top:0; left:0; width:100%; height:100%;
-  background:rgba(0,0,0,0.95); z-index:9999; display:none;
-  flex-direction:column; align-items:center; justify-content:center; text-align:center;
+h1, h2 { margin-bottom: 10px; }
+.section { margin-top: 20px; padding: 15px; background: #111; border-radius: 10px; }
+.btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: #00c853;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
 }
-#joinOverlay button{
-  padding:16px 28px; font-size:18px; font-weight:bold;
-  border:none; border-radius:12px; background:var(--accent); color:#fff; cursor:pointer;
+.btn:active { transform: scale(0.95); }
+.hidden { display: none; }
+input, select {
+  padding: 8px; margin: 5px 0; width: 100%; border-radius: 5px; border: none;
+}
+#joinPopup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 20px;
+  z-index: 9999;
+}
+#joinPopup button {
+  background: #00c853;
+  color: #fff;
+  padding: 12px 20px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  cursor: pointer;
+}
+canvas { border-radius: 10px; display: block; margin: 10px auto; }
+#claimSuccessMsg {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #00c853;
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 16px;
+  display: none;
+  z-index: 9999;
+  text-align: center;
 }
 </style>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 </head>
+
 <body>
-<header>
-<h1>Konnethubbot</h1>
-<div class="stats">
-  <div class="card"><h2 id="points">0</h2><p>Points</p></div>
-  <div class="card"><h2 id="earned">$0.00000</h2><p>Earned</p></div>
-</div>
-</header>
 
-<main>
-<div class="panel left">
-  <div class="task-area">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <strong>Complete tasks to earn rewards</strong>
-        <div class="small muted">Earn +100 points per task</div>
-      </div>
-      <div style="min-width:140px;text-align:right">
-        <button id="copyReferral" class="btn ghost">Copy Referral Link</button>
-        <button id="withdrawOpen" class="btn primary">Withdraw</button>
-      </div>
-    </div>
-
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <button id="taskButton" class="btn primary">Task & Earn</button>
-      <button id="claimButton" class="btn primary">Claim Welcome Bonus</button>
-    </div>
-
-    <div class="games">
-      <button class="gameBtn" data-game="subway-surfers">🎮 Subway Surfers</button>
-      <button class="gameBtn" data-game="happy-wheels">🎯 Happy Wheels</button>
-      <button class="gameBtn" data-game="geometry-dash">🕹️ Geometry Dash</button>
-    </div>
-
-    <iframe id="gameFrame"></iframe>
-
-    <div id="adsWrapper" style="display:none; margin-top:10px;"></div>
-    <button id="claimButtonBig" class="claim-big">Claim More Points</button>
-  </div>
+<div id="joinPopup">
+  <h2>📢 Join Our Telegram Channel to Continue</h2>
+  <p>You must join before using the app.</p>
+  <button onclick="joinChannelClicked()">👉 Join @earnzoners</button>
 </div>
 
-<div class="panel right">
-  <div class="compact">
-    <h4>Your Referral</h4>
-    <div class="small">Your ID: <strong id="userIdDisplay">-</strong></div>
-    <div class="small">Referrer: <strong id="referrerDisplay">-</strong></div>
-    <div style="margin-top:8px"><div class="small">Referral bonus: <strong>20%</strong></div></div>
-  </div>
+<div id="mainPage" style="display:none;">
 
-  <div class="compact" style="margin-top:12px">
-    <h4>Pending Referral Payouts (outbox)</h4>
-    <div id="refOutbox" class="small muted">No pending referral payouts yet.</div>
-  </div>
+<h1>⚡ Spin & Earn Points</h1>
+<p>Points: <span id="points">0</span> | Energy: <span id="energy">50</span></p>
 
-  <div class="compact" style="margin-top:12px">
-    <div id="requests" class="requests"></div>
-  </div>
-</div>
-</main>
-
-<footer><div class="small">Tip: Points convert automatically only when you play games.</div></footer>
-
-<div class="drawer" id="drawer">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <strong>Withdraw (min $10)</strong>
-    <button id="closeDrawer" class="btn ghost"><i class="fa fa-xmark"></i></button>
-  </div>
-
-  <label>Amount (USD)</label>
-  <input id="wdAmount" type="number" min="10" step="0.01" />
-
-  <label>Method</label>
-  <select id="wdMethod">
-    <option value="payeer">Payeer</option>
-    <option value="skrill">Skrill</option>
-    <option value="usdt">USDT</option>
-    <option value="bank">Bank Transfer</option>
-  </select>
-
-  <label>Details (wallet / account)</label>
-  <textarea id="wdDetails" rows="3"></textarea>
-
-  <div style="display:flex;gap:8px;margin-top:8px">
-    <button id="submitWd" class="btn primary">Send Request</button>
-    <button id="cancelWd" class="btn ghost">Cancel</button>
-  </div>
+<div class="section">
+  <canvas id="spinCanvas" width="300" height="300"></canvas>
+  <p id="scratchMsg">🎡 Tap wheel to spin (0/6)</p>
 </div>
 
-<div id="joinOverlay">
-  <h2 style="margin-bottom:16px;">🚫 You must join our channel to continue</h2>
-  <button onclick="joinAndContinue()">👉 Join Telegram Channel</button>
+<div class="section">
+<h2>📋 Tasks</h2>
+<div id="taskIntro">
+  <div class="btn" id="startTasksBtn">Start Tasks</div>
+</div>
+<div id="adsgram-container" class="hidden"></div>
+<div id="nextTaskBtnContainer" class="hidden">
+  <div class="btn" id="nextTaskBtn">➡️ Next Task</div>
+</div>
+<div id="finalTaskBtnContainer" class="hidden">
+  <div class="btn" id="finalTaskBtn">🏁 Finish Tasks</div>
+</div>
+</div>
+
+<div class="section">
+<h2>💳 Withdraw</h2>
+<p><b>Minimum withdrawal is 250,000 points (~$59)</b></p>
+<select id="method">
+<option value="Litecoin">Litecoin</option>
+<option value="USDT">USDT</option>
+<option value="Payeer">Payeer</option>
+<option value="Bank">Bank Account</option>
+</select>
+<input type="text" id="address" placeholder="Enter wallet or account"/>
+<input type="number" id="amount" placeholder="Minimum 250000"/>
+<div class="btn" id="withdrawBtn">Request Withdraw</div>
+</div>
+
 </div>
 
 <script>
-const ADSGRAM_BLOCKS=["task-23260","task-23261","task-23262","task-23263","task-23264","task-23265"];
-const POINTS_PER_TASK=100;
-const CONVERT_RATE=0.0002; // 1 point = $0.0002
-
-const tg=window.Telegram.WebApp;
-let points=parseInt(localStorage.getItem("points")||0);
-let earned=parseFloat(localStorage.getItem("earned")||0);
-
-const pointsEl=document.getElementById("points");
-const earnedEl=document.getElementById("earned");
-const adsWrapper=document.getElementById("adsWrapper");
-const taskButton=document.getElementById("taskButton");
-const claimButton=document.getElementById("claimButton");
-const claimButtonBig=document.getElementById("claimButtonBig");
-const copyReferral=document.getElementById("copyReferral");
-const withdrawOpen=document.getElementById("withdrawOpen");
-const drawer=document.getElementById("drawer");
-const closeDrawer=document.getElementById("closeDrawer");
-const submitWd=document.getElementById("submitWd");
-const cancelWd=document.getElementById("cancelWd");
-const gameButtons=document.querySelectorAll(".gameBtn");
-const gameFrame=document.getElementById("gameFrame");
-
-const GAME_LINKS={
-  "subway-surfers":"https://freeonlinegames.github.io/subway-surfers-tokyo/",
-  "happy-wheels":"https://games-online.io/game/HappyWheels/",
-  "geometry-dash":"https://freeonlinegames.github.io/geometry-dash.html"
-};
+const webApp = Telegram.WebApp;
+let points = parseInt(localStorage.getItem("points") || "0");
+let energy = parseInt(localStorage.getItem("energy") || "50");
 
 function updateUI(){
-  pointsEl.textContent=points;
-  earnedEl.textContent="$"+earned.toFixed(5);
-  claimButtonBig.style.display=points<=0?"block":"none";
-  if(!gameFrame.src) gameFrame.style.display="none";
+  document.getElementById("points").innerText = points;
+  document.getElementById("energy").innerText = energy;
 }
-function saveAll(){
-  localStorage.setItem("points",points);
-  localStorage.setItem("earned",earned);
+function saveState(){
+  localStorage.setItem("points", points);
+  localStorage.setItem("energy", energy);
 }
 
-function getRandomAdsBlock(){
-  return ADSGRAM_BLOCKS[Math.floor(Math.random()*ADSGRAM_BLOCKS.length)];
-}
-
-function createAdsTask(){
-  adsWrapper.innerHTML="";
-  const el=document.createElement("adsgram-task");
-  el.setAttribute("data-block-id",getRandomAdsBlock());
-  el.className="task";
-  el.addEventListener("reward",()=>{
-    points+=POINTS_PER_TASK;
-    saveAll(); updateUI();
-    adsWrapper.style.display="none";
-  });
-  adsWrapper.appendChild(el);
-  adsWrapper.style.display="block";
-  if(typeof el.load==="function") el.load();
-}
-taskButton.addEventListener("click",createAdsTask);
-claimButton.addEventListener("click",createAdsTask);
-claimButtonBig.addEventListener("click",createAdsTask);
-
-/* 👉👉 UPDATED: auto convert ONLY when clicking a game */
-gameButtons.forEach(btn=>{
-  btn.addEventListener("click",()=>{
-
-    if(points>0){
-      earned += points * CONVERT_RATE; // 100pts = $0.02
-      points = 0;
-      saveAll();
-      updateUI();
-    }
-
-    const gameKey=btn.dataset.game;
-    gameFrame.src=GAME_LINKS[gameKey];
-    gameFrame.style.display="block";
-
-    earned+=0.00001; 
-    saveAll(); updateUI();
-
-    tg.showAlert(`🎉 ${btn.textContent} opened! $0.00001 added.`);
-  });
-});
-
-/* Reward ad every 4 minutes */
-setInterval(()=>{
-  const rewardAd=window.Adsgram.init({blockId:"23257"});
-  rewardAd.show().then(res=>{
-    if(res.done){
-      earned+=0.00001; saveAll(); updateUI();
-    }
-  }).catch(err=>console.log(err));
-},190000);
-
-/* Preload reward + show join screen */
-document.addEventListener("DOMContentLoaded",()=>{
-  const rewardAd=window.Adsgram.init({blockId:"23258"});
-  rewardAd.show().then(res=>{
-    if(res.done){
-      points+=POINTS_PER_TASK;
-      saveAll(); updateUI();
-    }
-    document.getElementById("joinOverlay").style.display="flex";
-  }).catch(err=>{
-    document.getElementById("joinOverlay").style.display="flex";
-  });
-});
-
-function joinAndContinue(){
+/* JOIN */
+function joinChannelClicked(){
   window.open("https://t.me/crytocurrentupdate","_blank");
-  if(!localStorage.getItem("joinedRewardGiven")){
-    points+=10;
-    saveAll(); updateUI();
-    localStorage.setItem("joinedRewardGiven","yes");
-    alert("🎉 Thanks for joining! +10 points");
+  document.getElementById("joinPopup").style.display="none";
+  document.getElementById("mainPage").style.display="block";
+}
+function showJoinPopupAfterAds(){
+  try{
+    const rewardAd = window.Adsgram.init({blockId:"23731"});
+    rewardAd.show().finally(()=>{
+      document.getElementById("joinPopup").style.display="flex";
+    });
+  }catch(e){
+    document.getElementById("joinPopup").style.display="flex";
   }
-  document.getElementById("joinOverlay").style.display="none";
 }
 
-copyReferral.addEventListener("click",()=>{
-  const uid=tg.initDataUnsafe?.user?.id||"unknown";
-  navigator.clipboard.writeText(`https://t.me/KonnetHubBotbot?start=${uid}`);
-  tg.showAlert("✅ Referral link copied!");
+/* ================= SPIN SYSTEM ================= */
+const rewardBlocks = ["23731","23732","23734"];
+const spinTaskBlocks = ["task-23767","task-23768","task-23774","task-23775"];
+
+let spinCount = 0;
+let spinning = false;
+let rewardCooldown = false;
+
+const canvas = document.getElementById("spinCanvas");
+const ctx = canvas.getContext("2d");
+const scratchMsg = document.getElementById("scratchMsg");
+const container = document.getElementById("adsgram-container");
+
+let currentRotation = 0;
+const spinSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2003/2003-preview.mp3");
+
+function drawWheel(rotation = 0){
+  const segments = 6;
+  const angle = (2 * Math.PI) / segments;
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.translate(150,150);
+  ctx.rotate(rotation);
+
+  for(let i=0;i<segments;i++){
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,140,i*angle,(i+1)*angle);
+    ctx.fillStyle = i % 2 === 0 ? "#00c853" : "#222";
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.moveTo(150,10);
+  ctx.lineTo(140,40);
+  ctx.lineTo(160,40);
+  ctx.fillStyle="#fff";
+  ctx.fill();
+}
+drawWheel();
+
+canvas.addEventListener("click", ()=>{
+  if(spinning || rewardCooldown) return;
+
+  spinning = true;
+  spinSound.play();
+
+  let spinDuration = 2500;
+  let spinAngle = Math.random() * 360 + 1080;
+  let start = null;
+
+  function animateSpin(timestamp){
+    if(!start) start = timestamp;
+    let progress = timestamp - start;
+
+    if(progress < spinDuration){
+      let easeOut = 1 - Math.pow(1 - progress/spinDuration,3);
+      currentRotation = (spinAngle * easeOut) * Math.PI/180;
+      drawWheel(currentRotation);
+      requestAnimationFrame(animateSpin);
+    }else{
+      spinning = false;
+      showRewardAd();
+    }
+  }
+  requestAnimationFrame(animateSpin);
 });
 
-withdrawOpen.addEventListener("click",()=>drawer.style.display="block");
-closeDrawer.addEventListener("click",()=>drawer.style.display="none");
-cancelWd.addEventListener("click",()=>drawer.style.display="none");
+function showRewardAd(){
+  try{
+    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
+    const rewardAd = window.Adsgram.init({blockId: randomBlock});
+    rewardAd.show().finally(()=>{
+      spinCount++;
+      scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
+      if(spinCount >= 6){
+        showSpinTask();
+      }
+    });
+  }catch(e){
+    spinCount++;
+    if(spinCount >= 6){
+      showSpinTask();
+    }
+  }
+}
 
-submitWd.addEventListener("click",()=>{
-  const amount=parseFloat(document.getElementById("wdAmount").value);
-  const method=document.getElementById("wdMethod").value;
-  const details=document.getElementById("wdDetails").value.trim();
+function showSpinTask(){
+  rewardCooldown = true;
+  const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
+  container.innerHTML = `<adsgram-task class="spin-task" data-block-id="${randomTask}"></adsgram-task>`;
+  container.classList.remove("hidden");
 
-  if(!amount||amount<10)return tg.showAlert("❌ Minimum withdraw is $10.");
-  if(amount>earned)return tg.showAlert(`❌ You only have $${earned.toFixed(5)} available.`);
-  if(!details)return tg.showAlert("❌ Please enter your wallet or account.");
+  const task = container.querySelector(".spin-task");
+  task.addEventListener("reward", ()=>{
+    points += 20;
+    saveState();
+    updateUI();
+    scratchMsg.innerText = "🎉 You earned 20 points!";
+    container.classList.add("hidden");
+    setTimeout(resetSpin, 3000);
+  });
+}
 
-  earned-=amount;
-  saveAll(); updateUI();
+function resetSpin(){
+  spinCount = 0;
+  rewardCooldown = false;
+  scratchMsg.innerText = "🎡 Tap wheel to spin (0/6)";
+  currentRotation = 0;
+  drawWheel();
+}
 
-  const msg=`📤 *Withdraw Request*
-👤 User ID: ${tg.initDataUnsafe?.user?.id}
-💵 Amount: $${amount}
-🏦 Method: ${method.toUpperCase()}
-🔗 Wallet/Account: ${details}
-💰 Remaining Balance: $${earned.toFixed(5)}
-⭐ Remaining Points: ${points}`;
+/* ================= TASK SYSTEM ================= */
+let currentTaskIndex=0;
+const taskIds=["task-23767","task-23768","task-23769","task-23774","task-23775"];
 
-  Api.sendMessage({chat_id:6136849497,text:msg,parse_mode:"Markdown"});
+function loadTask(blockId){
+  container.innerHTML=`<adsgram-task class="task" data-block-id="${blockId}"></adsgram-task>`;
+  container.classList.remove("hidden");
+  document.getElementById("taskIntro").classList.add("hidden");
 
-  tg.showAlert("✅ Withdraw request sent!");
-  drawer.style.display="none";
+  const task=container.querySelector(".task");
+  task.addEventListener("reward",()=>{
+    points += 1;
+    saveState();
+    updateUI();
+
+    if(currentTaskIndex<taskIds.length-1){
+      document.getElementById("nextTaskBtnContainer").classList.remove("hidden");
+    }else{
+      document.getElementById("finalTaskBtnContainer").classList.remove("hidden");
+    }
+  });
+}
+
+document.getElementById("startTasksBtn").addEventListener("click",()=>{
+  currentTaskIndex=0;
+  loadTask(taskIds[currentTaskIndex]);
+});
+document.getElementById("nextTaskBtn").addEventListener("click",()=>{
+  currentTaskIndex++;
+  document.getElementById("nextTaskBtnContainer").classList.add("hidden");
+  loadTask(taskIds[currentTaskIndex]);
+});
+document.getElementById("finalTaskBtn").addEventListener("click",()=>{
+  try{
+    const rewardAd=window.Adsgram.init({blockId:"23731"});
+    rewardAd.show().then(res=>{
+      if(res.done){
+        points+=1;
+        saveState();
+        updateUI();
+      }
+      document.getElementById("taskIntro").classList.remove("hidden");
+      container.classList.add("hidden");
+      document.getElementById("finalTaskBtnContainer").classList.add("hidden");
+      currentTaskIndex=0;
+    });
+  }catch(e){
+    document.getElementById("taskIntro").classList.remove("hidden");
+    container.classList.add("hidden");
+    document.getElementById("finalTaskBtnContainer").classList.add("hidden");
+    currentTaskIndex=0;
+  }
 });
 
-updateUI();
+/* ================= WITHDRAW ================= */
+document.getElementById("withdrawBtn").addEventListener("click",()=>{
+  const method=document.getElementById("method").value;
+  const address=document.getElementById("address").value.trim();
+  const amount=parseInt(document.getElementById("amount").value);
+
+  if(isNaN(amount)||amount<250000){
+    alert("Minimum withdrawal is 250,000 points (~$59)");
+    return;
+  }
+  if(points<amount){
+    alert("Not enough points");
+    return;
+  }
+
+  const user=webApp.initDataUnsafe.user||{};
+  const msg=JSON.stringify({
+    type:"withdraw_request",
+    user_id:user.id,
+    username:user.username||"No username",
+    amount,method,address
+  });
+  Telegram.WebApp.sendData(msg);
+
+  points-=amount;
+  saveState();
+  updateUI();
+  alert("✅ Withdrawal request sent!");
+});
+
+document.addEventListener("DOMContentLoaded",()=>{
+  updateUI();
+  showJoinPopupAfterAds();
+});
 </script>
+
 </body>
 </html>
