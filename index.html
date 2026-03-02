@@ -53,10 +53,18 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
 
 <body>
 
+<!-- JOIN POPUP -->
 <div id="joinPopup">
   <h2>📢 Join Our Telegram Channel to Continue</h2>
   <p>You must join before using the app.</p>
-  <button onclick="joinChannelClicked()">👉 Join @earnzoners</button>
+
+  <div class="btn" onclick="joinChannelClicked()">
+    👉 Join Channel
+  </div>
+
+  <div class="btn" style="background:#222;margin-top:15px;" onclick="checkJoin()">
+    ✅ I Have Joined
+  </div>
 </div>
 
 <div id="mainPage" style="display:none;">
@@ -75,13 +83,13 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
   <div id="claimContainer"></div>
 </div>
 
-<!-- TASK BUTTON CLOSE TO SPIN -->
+<!-- TASK BUTTON -->
 <div class="section">
   <div class="btn" id="taskBtn">📋 Task</div>
   <div id="taskContainer" class="hidden"></div>
 </div>
 
-<!-- WITHDRAW CLOSE TO SPIN -->
+<!-- WITHDRAW -->
 <div class="section">
 <h2>💳 Withdraw</h2>
 <p><b>Minimum withdrawal is 10,000 points (~$60)</b></p>
@@ -118,11 +126,13 @@ function saveState(){
 /* JOIN CHANNEL */
 function joinChannelClicked(){
   window.open("https://t.me/FoxiGrowbot?start=ref_6910486529","_blank");
+}
+function checkJoin(){
   document.getElementById("joinPopup").style.display="none";
   document.getElementById("mainPage").style.display="block";
 }
 
-/* PRELOADED ADSGRAM REWARD BLOCKS (untouched) */
+/* PRELOADED ADSGRAM REWARD BLOCKS */
 const rewardBlocks = ["24083","24084","24085"];
 const spinTaskBlocks = ["task-24086","task-24087","task-24088","task-24089"];
 
@@ -232,7 +242,7 @@ function resetSpin(){
   drawWheel();
 }
 
-/* TASK BUTTON (random spinTaskBlocks, 10 points reward) */
+/* TASK BUTTON */
 document.getElementById("taskBtn").addEventListener("click", ()=>{
   const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
   const container = document.getElementById("taskContainer");
@@ -270,23 +280,10 @@ document.getElementById("withdrawBtn").addEventListener("click",()=>{
   alert("✅ Withdrawal request sent!");
 });
 
-/* JOIN POPUP AFTER PRELOADED AD */
-function showJoinPopupAfterAds(){
-  try{
-    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
-    const rewardAd = window.Adsgram.init({blockId: randomBlock});
-    rewardAd.show().finally(()=>{
-      document.getElementById("joinPopup").style.display="flex";
-    });
-  }catch(e){
-    document.getElementById("joinPopup").style.display="flex";
-  }
-}
-
-/* ON LOAD */
+/* SHOW JOIN POPUP ON LOAD */
 document.addEventListener("DOMContentLoaded",()=>{
   updateUI();
-  showJoinPopupAfterAds();
+  document.getElementById("joinPopup").style.display="flex";
 });
 </script>
 
