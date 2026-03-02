@@ -132,34 +132,15 @@ function showJoinPopupAfterAds(){
   document.getElementById("joinPopup").style.display="flex";
 }
 
-/* ================= PRELOAD ADSGRAM ON EVERY SPIN ================= */
-const rewardBlocks = ["24083","24084","24085"];
-let adsPreloadActive = false;
-let adsShown = 0;
+/* SHOW 1 AD AFTER EACH SPIN */
+const rewardBlocks = ["23731","23732","23734"];
 
-function preloadAdsOnSpin(){
-  adsPreloadActive = true;
-  adsShown = 0;
-
-  function showAdSequentially(){
-    if(!adsPreloadActive) return;
-    if(adsShown >= 6){
-      adsPreloadActive = false;
-      return;
-    }
-    try{
-      const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
-      const rewardAd = window.Adsgram.init({blockId: randomBlock});
-      rewardAd.show().finally(()=>{
-        adsShown++;
-        setTimeout(showAdSequentially, 1500);
-      });
-    }catch(e){
-      adsShown++;
-      setTimeout(showAdSequentially, 1500);
-    }
-  }
-  showAdSequentially();
+function showSingleAd(){
+  try{
+    const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
+    const rewardAd = window.Adsgram.init({blockId: randomBlock});
+    rewardAd.show();
+  }catch(e){}
 }
 
 /* SPIN SYSTEM */
@@ -196,10 +177,6 @@ canvas.addEventListener("click", ()=>{
 
   spinning = true;
 
-  // PRELOAD STARTS IMMEDIATELY WHEN USER SPINS
-  adsPreloadActive = false;
-  preloadAdsOnSpin();
-
   let spinDuration = 2000;
   let spinAngle = Math.random() * 360 + 1080;
   let start = null;
@@ -207,6 +184,7 @@ canvas.addEventListener("click", ()=>{
   function animateSpin(timestamp){
     if(!start) start = timestamp;
     let progress = timestamp - start;
+
     if(progress < spinDuration){
       let easeOut = 1 - Math.pow(1 - progress/spinDuration,3);
       currentRotation = (spinAngle * easeOut) * Math.PI/180;
@@ -214,20 +192,20 @@ canvas.addEventListener("click", ()=>{
       requestAnimationFrame(animateSpin);
     }else{
       spinning = false;
-      showRewardAd();
+
+      spinCount++;
+      showSingleAd();
+
+      scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
+
+      if(spinCount >= 6){
+        showClaimButton();
+      }
     }
   }
+
   requestAnimationFrame(animateSpin);
 });
-
-function showRewardAd(){
-  spinCount++;
-  scratchMsg.innerText = "🎡 Tap wheel to spin (" + spinCount + "/6)";
-  if(spinCount >= 6){
-    adsPreloadActive = false;
-    showClaimButton();
-  }
-}
 
 function showClaimButton(){
   rewardCooldown = true;
@@ -261,7 +239,6 @@ function showSpinTask(){
 function resetSpin(){
   spinCount = 0;
   rewardCooldown = false;
-  adsPreloadActive = false;
   scratchMsg.innerText = "🎡 Tap wheel to spin (0/6)";
   currentRotation = 0;
   drawWheel();
