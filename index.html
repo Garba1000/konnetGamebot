@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Scratch & Earn</title>
+<title>Spin & Earn</title>
 
 <style>
 body {
@@ -109,7 +109,6 @@ const webApp = Telegram.WebApp;
 
 let points = Number(localStorage.getItem("points"));
 let energy = Number(localStorage.getItem("energy"));
-
 if (isNaN(points)) points = 0;
 if (isNaN(energy)) energy = 50;
 
@@ -122,38 +121,57 @@ function saveState(){
   localStorage.setItem("energy", energy);
 }
 
+/* JOIN CHANNEL */
 function joinChannelClicked(){
   window.open("https://t.me/crytocurrentupdate","_blank");
   document.getElementById("joinPopup").style.display="none";
   document.getElementById("mainPage").style.display="block";
 }
+
 function showJoinPopupAfterAds(){
   document.getElementById("joinPopup").style.display="flex";
 }
 
+/* ================= PRELOAD ADSGRAM ON EVERY SPIN ================= */
+const rewardBlocks = ["23731","23732","23734"];
+
+function preloadAdsOnSpin(){
+  let adsShown = 0;
+  function showAdSequentially(){
+    if(adsShown >= 6) return; // 6 ads per spin
+    try{
+      const randomBlock = rewardBlocks[Math.floor(Math.random()*rewardBlocks.length)];
+      const rewardAd = window.Adsgram.init({blockId: randomBlock});
+      rewardAd.show().finally(()=>{
+        adsShown++;
+        setTimeout(showAdSequentially, 2000);
+      });
+    }catch(e){
+      adsShown++;
+      setTimeout(showAdSequentially, 2000);
+    }
+  }
+  showAdSequentially();
+}
+
 /* SPIN SYSTEM */
 const spinTaskBlocks = ["task-24086","task-24087","task-24088","task-24089"];
-
 let spinCount = 0;
 let spinning = false;
 let rewardCooldown = false;
-
 const canvas = document.getElementById("spinCanvas");
 const ctx = canvas.getContext("2d");
 const scratchMsg = document.getElementById("scratchMsg");
 const container = document.getElementById("adsgram-container");
-
 let currentRotation = 0;
 
 function drawWheel(rotation = 0){
   const segments = 6;
   const angle = (2 * Math.PI) / segments;
-
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save();
   ctx.translate(150,150);
   ctx.rotate(rotation);
-
   for(let i=0;i<segments;i++){
     ctx.beginPath();
     ctx.moveTo(0,0);
@@ -161,7 +179,6 @@ function drawWheel(rotation = 0){
     ctx.fillStyle = i % 2 === 0 ? "#00c853" : "#222";
     ctx.fill();
   }
-
   ctx.restore();
 }
 drawWheel();
@@ -169,8 +186,10 @@ drawWheel();
 canvas.addEventListener("click", ()=>{
   if(spinning || rewardCooldown) return;
 
-  spinning = true;
+  // Preload 6 ads every spin
+  preloadAdsOnSpin();
 
+  spinning = true;
   let spinDuration = 2000;
   let spinAngle = Math.random() * 360 + 1080;
   let start = null;
@@ -178,7 +197,6 @@ canvas.addEventListener("click", ()=>{
   function animateSpin(timestamp){
     if(!start) start = timestamp;
     let progress = timestamp - start;
-
     if(progress < spinDuration){
       let easeOut = 1 - Math.pow(1 - progress/spinDuration,3);
       currentRotation = (spinAngle * easeOut) * Math.PI/180;
@@ -203,16 +221,13 @@ function showRewardAd(){
 function showClaimButton(){
   rewardCooldown = true;
   scratchMsg.innerHTML = "🎉 You completed 6 spins!";
-
   const btn = document.createElement("div");
   btn.className = "btn";
   btn.innerText = "🎁 Claim 200 Points";
-
   btn.onclick = function(){
     showSpinTask();
     btn.remove();
   };
-
   scratchMsg.appendChild(document.createElement("br"));
   scratchMsg.appendChild(btn);
 }
@@ -221,17 +236,14 @@ function showSpinTask(){
   const randomTask = spinTaskBlocks[Math.floor(Math.random()*spinTaskBlocks.length)];
   container.innerHTML = `<adsgram-task class="spin-task" data-block-id="${randomTask}"></adsgram-task>`;
   container.classList.remove("hidden");
-
   const task = container.querySelector(".spin-task");
   task.addEventListener("reward", ()=>{
     points += 200;
     saveState();
     updateUI();
-
     scratchMsg.innerText = "🎉 Congratulations! You're successful receive 200 points from Spin & Earn!";
     container.classList.add("hidden");
-
-    setTimeout(resetSpin, 30000); // 30 seconds
+    setTimeout(resetSpin, 30000);
   });
 }
 
@@ -243,20 +255,13 @@ function resetSpin(){
   drawWheel();
 }
 
+/* ================= WITHDRAW ================= */
 document.getElementById("withdrawBtn").addEventListener("click",()=>{
   const method=document.getElementById("method").value;
   const address=document.getElementById("address").value.trim();
   const amount=parseInt(document.getElementById("amount").value);
-
-  if(isNaN(amount)||amount<250000){
-    alert("Minimum withdrawal is 250,000 points (~$59)");
-    return;
-  }
-  if(points<amount){
-    alert("Not enough points");
-    return;
-  }
-
+  if(isNaN(amount)||amount<250000){ alert("Minimum withdrawal is 250,000 points (~$59)"); return; }
+  if(points<amount){ alert("Not enough points"); return; }
   const user=webApp.initDataUnsafe.user||{};
   const msg=JSON.stringify({
     type:"withdraw_request",
@@ -264,15 +269,14 @@ document.getElementById("withdrawBtn").addEventListener("click",()=>{
     username:user.username||"No username",
     amount,method,address
   });
-
   Telegram.WebApp.sendData(msg);
-
   points-=amount;
   saveState();
   updateUI();
   alert("✅ Withdrawal request sent!");
 });
 
+/* ================= ON BOT LOAD ================= */
 document.addEventListener("DOMContentLoaded",()=>{
   updateUI();
   showJoinPopupAfterAds();
