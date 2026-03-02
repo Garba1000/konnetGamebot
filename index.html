@@ -107,7 +107,6 @@ canvas { border-radius: 10px; display: block; margin: 10px auto; }
 <script>
 const webApp = Telegram.WebApp;
 
-/* ===== SAFE STORAGE FIX ===== */
 let points = Number(localStorage.getItem("points"));
 let energy = Number(localStorage.getItem("energy"));
 
@@ -123,7 +122,6 @@ function saveState(){
   localStorage.setItem("energy", energy);
 }
 
-/* JOIN */
 function joinChannelClicked(){
   window.open("https://t.me/crytocurrentupdate","_blank");
   document.getElementById("joinPopup").style.display="none";
@@ -133,8 +131,7 @@ function showJoinPopupAfterAds(){
   document.getElementById("joinPopup").style.display="flex";
 }
 
-/* ================= SPIN SYSTEM ================= */
-const rewardBlocks = ["24083","24084","24085"];
+/* SPIN SYSTEM */
 const spinTaskBlocks = ["task-24086","task-24087","task-24088","task-24089"];
 
 let spinCount = 0;
@@ -231,10 +228,10 @@ function showSpinTask(){
     saveState();
     updateUI();
 
-    scratchMsg.innerText = "✅ Successfully earned 200 points!";
+    scratchMsg.innerText = "🎉 Congratulations! You're successful receive 200 points from Spin & Earn!";
     container.classList.add("hidden");
 
-    setTimeout(resetSpin, 3000);
+    setTimeout(resetSpin, 30000); // 30 seconds
   });
 }
 
@@ -246,7 +243,6 @@ function resetSpin(){
   drawWheel();
 }
 
-/* ================= WITHDRAW ================= */
 document.getElementById("withdrawBtn").addEventListener("click",()=>{
   const method=document.getElementById("method").value;
   const address=document.getElementById("address").value.trim();
